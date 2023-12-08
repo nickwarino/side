@@ -1,0 +1,80 @@
+---
+title: "Socialism Index"
+author: "Nick Warino"
+date: "8/18/2022"
+output: 
+  html_document: 
+    toc: yes
+    toc_float: yes
+editor_options: 
+  chunk_output_type: console
+  markdown: 
+    wrap: 72
+---
+
+```{=html}
+<style> # CSS styles
+.table-hover > tbody > tr:hover { 
+  background-color: #f4f442;
+}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options("scipen"=1000000)
+
+folder_names <- c("raw_data", 
+                  "output_data", 
+                  "rmd", 
+                  "docs", 
+                  "scripts")
+sapply(folder_names, dir.create)
+```
+
+```{r}
+library(rmarkdown) # Dynamic Documents for R
+library(tidyverse) # Easily Install and Load the 'Tidyverse'
+library(ggthemes) # Extra Themes, Scales and Geoms for 'ggplot2'
+library(ggrepel) # Automatically Position Non-Overlapping Text Labels with 'ggplot2'
+library(ggtext) # Improved Text Rendering Support for 'ggplot2'
+library(devtools) # Tools to Make Developing R Packages Easier
+library(tidylog) # Logging for 'dplyr' and 'tidyr' Functions
+library(skimr) # Compact and Flexible Summaries of Data
+library(lemon) # Freshing Up your 'ggplot2' Plots
+library(ragg) # Graphic Devices Based on AGG
+library(kableExtra) # Construct Complex Table with 'kable' and Pipe Syntax
+library(here) # A Simpler Way to Find Your Files
+library(annotater) # Annotate Package Load Calls
+library(scales) # Scale Functions for Visualization
+library(fredr) # An R Client for the 'FRED' API
+library(OECD) # Search and Extract Data from the OECD
+library(readsdmx) # Read SDMX-XML Data
+```
+
+# Search for Socialism Index variables from OECD
+> Unless you know the exact code of the series you’re looking for, the best > way to start is by downloading a dataframe with all the available datasets > and their descriptions, and then run searches on it. The search string can > be a regular expression and is case-insensitive by default. - [OECD API R package](https://github.com/expersso/OECD)
+
+
+
+```{r}
+dataset_list <- get_datasets()
+# search_dataset("glance", data = dataset_list)
+```
+search_dataset("glance", data = dataset_list)
+```{r}
+trade_union_density <- get_dataset(dataset = "TUD")
+collective_bargaining_coverage <- get_dataset(dataset = "CBC")
+
+filter_list <- list(c(), c("GLBF90_GDP"))
+gov_net_worth_gdp <- get_dataset(dataset = "GOV_2021", filter = filter_list)
+```
+
+
+
+```{r}
+TUD_structure <- get_data_structure("TUD")
+CBC_structure <- get_data_structure("CBC")
+GOV_2021_structure <- get_data_structure("GOV_2021")
+```
+

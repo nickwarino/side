@@ -1,0 +1,37 @@
+My_Theme_WithY <- function() {
+  theme_minimal() + 
+    theme(
+      text = element_text(
+        size = 12, 
+        family = "Avenir Next Condensed"),
+      plot.title = element_markdown(
+        size = 22, 
+        family = "Avenir Next Condensed", 
+        face="bold"),
+      plot.subtitle = element_text(
+        size = 14, 
+        family = "Avenir Next Condensed"),
+      plot.caption = element_text(
+        size = 12, 
+        family = "Avenir Next Condensed"),
+      axis.title.x = element_text(
+        size = 18, 
+        family = "Avenir Next Condensed"),
+      axis.text.x = element_text(
+        size = 14, 
+        family = "Avenir Next Condensed"),
+      axis.title.y = element_text(
+        size = 18, 
+        family = "Avenir Next Condensed"),
+      axis.text.y = element_text(
+        size = 14, 
+        family = "Avenir Next Condensed"),
+      strip.text = element_text(
+        size = 14, 
+        family = "Avenir Next Condensed", 
+        face="bold"),
+      legend.position = "top",
+      plot.background = element_rect(
+        fill="white", 
+        color="black"))
+  }

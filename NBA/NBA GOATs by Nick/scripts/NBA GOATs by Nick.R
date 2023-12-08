@@ -1,0 +1,139 @@
+# Creating folder shortcuts for all new projects (from Andrew Ba Tran's R-Journalism Course)
+folder_names <- c("raw_data", "output_data", "rmd", "docs", "scripts")
+sapply(folder_names, dir.create)
+
+# install and load  packages
+install.packages(c("learnr",
+  "rmarkdown",
+  "tidyverse",
+  "ggthemes",
+  "ggrepel",
+  "googlesheets4",
+  "tidylog"))
+
+## Load all packages
+lapply(c("learnr",
+         "rmarkdown",
+         "tidyverse",
+         "ggthemes",
+         "ggrepel",
+         "googlesheets4",
+         "tidylog"), require, character.only = TRUE)
+# load data
+
+p_vorp <- read_sheet("13eaC7aZoqBpAmC_OPAU-Je5imPkUUm_cBMMqsXhlnxM")
+r_vorp <- read_sheet("1mhA1hVQyx1YW8t8ZiXM3yU0LPWnsD6CfxQfmIclMs20")
+p_bpm <- read_sheet("1Su78fL4QIB_frUEYbqVxre7m5_z3cQdy54hW5DqQVqw")
+r_bpm <- read_sheet("1ujQ6zcK5ARmEBSkl6NJaPjR6F3us9U6T7oZEOBY7TRE")
+f_mvp <- read_sheet("1vE0GiAp-IIp6K-sUot46sFwBJUMPT3SJViYIlf8lH3s")
+r_mvp <- read_sheet("1YnAwGpUuB4Vtsj_V-FJL-T1GPdSyUDufix7rc4HTz3c")
+r_ws <- read_sheet("1eK8sRTZCr9Hv1eaEypBg_TNpIN4Xsrd-vEQQ3bOD5iw")
+r_ws48 <- read_sheet("1UYAaakpo77iNA0MEPQU_S-Z9B_ouRqsqXPE0YbO1p9c")
+p_ws <- read_sheet("1R2akJ2Hv3z_od-A5TTvOcNZroaKngqo9_DatwF3PbTw")
+p_ws48 <- read_sheet("1TbkTMlAqYBK86-yjLFRbUw3fWBxlx9EXmQtrxOncONo")
+
+# Combine Data Sets via dplyr full join
+
+## count mvp finals
+
+f_mvp2 <- f_mvp |> 
+  group_by(Player) |>
+  mutate(count=n()) |> 
+  filter (! duplicated(Player))
+
+colnames(f_mvp2) <- c("Player", "Finals_MVPs")
+colnames(r_mvp) <- c("Player", "RS_MVPs")
+
+## put all data frames into a list
+goats_list <- list(p_vorp, r_vorp, p_bpm, r_bpm, f_mvp2, r_mvp, r_ws, r_ws48, p_ws, p_ws48)
+
+## merge all data frames together
+goats <- goats_list |> reduce(full_join, by='Player')
+
+## calculate z scores
+
+goats <- goats |> 
+  mutate(z_p_vorp = scale(p_vorp, center = TRUE, scale = TRUE)) |> 
+  mutate(z_r_vorp = scale(r_vorp, center = TRUE, scale = TRUE)) |>
+  mutate(z_p_bpm = scale(p_bpm, center = TRUE, scale = TRUE)) |> 
+  mutate(z_r_bpm = scale(r_bpm, center = TRUE, scale = TRUE)) |> 
+  mutate(z_r_ws = scale(r_ws, center = TRUE, scale = TRUE)) |> 
+  mutate(z_r_ws48 = scale(r_ws48, center = TRUE, scale = TRUE)) |>
+  mutate(z_p_ws = scale(p_ws, center = TRUE, scale = TRUE)) |> 
+  mutate(z_p_ws48 = scale(p_ws48, center = TRUE, scale = TRUE))
+
+## delete uncessary columns
+ 
+# Create new Variable GOAT Scores (Mean of Z-Scores) 
+
+goats_list2 <-goats |> rowwise() |>
+  mutate(Rate_GOAT = mean(c(z_r_bpm,z_p_bpm,z_r_ws48,z_p_ws48), na.rm=TRUE)) |>  
+  mutate(Cum_GOAT = mean(c(z_p_vorp,z_r_vorp,z_r_ws,z_p_ws), na.rm=TRUE)) |>  
+  mutate(GOAT = mean(c(Rate_GOAT,Cum_GOAT)))  |> 
+  
+## change NAs to 0 for mvp counts   
+  mutate(Finals_MVPs = ifelse(is.na(Finals_MVPs), 0, Finals_MVPs),
+         RS_MVPs = ifelse(is.na(RS_MVPs), 0, RS_MVPs))
+
+# Data Viz
+
+## Test theme
+
+My_Theme = theme(
+  plot.title = element_text(size = 30),
+  axis.title.x = element_text(size = 16),
+  axis.text.x = element_text(size = 16),
+  axis.title.y = element_text(size = 16),
+  axis.text.y = element_text(size = 16),
+  plot.background = element_rect(fill="white", color="black"))
+
+## First Graph
+ggplot(goats_list2,
+       aes(x=Rate_GOAT,
+           y=Cum_GOAT,
+           size=RS_MVPs))+
+  geom_point(alpha=0.7, shape=21, color='black', aes(fill=Finals_MVPs)) +
+  scale_fill_gradient2(midpoint=0, low="blue", mid="white",
+                       high="red", space ="Lab", name="NBA Finals MVPs") +
+  scale_size(range = c(2, 24)) +
+  geom_text_repel(aes(label=Player), size=3, color="black", max.overlaps = 15) +
+  theme_minimal()+
+  labs(title="Best NBA Players Ever", 
+       subtitle="Finals MVP didn't exist until 1969. Sorry Bill Russell.\nnickwarino.com, created 2022-06-21", 
+       caption="sources: Basketball-Reference.com, Wikipedia 
+       \nUniverse of players limited to 562 players listed in top 250 list for regular season or playoff WS, WS/48, BPM, or VORP leaderboards",
+       x="Value Per Minute in Regular Season and Playoffs 
+       (Mean of Regular Season and Playoff BPM & WS Z-Scores)",
+       y="Value (Total) in Regular Season and Playoffs 
+       (Mean of Regular Season and Playoff VORP & WS Z-Scores)",
+       size="Regular Season MVPs",
+       color="NBA Finals MVPs") +
+  theme(legend.position=c(.15,.65)) + My_Theme
+
+ggsave("docs/2022-06-21_nba_goat.png", width=15, height=15, units="in")
+
+## 2nd graph, with circles corresponding with Total Goat
+ggplot(goats_list2,
+       aes(x=Rate_GOAT,
+           y=Cum_GOAT,
+           size=GOAT))+
+  geom_point(alpha=0.7, shape=21, color='black', aes(fill=Finals_MVPs)) +
+  scale_fill_gradient2(midpoint=0, low="blue", mid="white",
+                       high="red", space ="Lab", name="NBA Finals MVPs") +
+  scale_size(range = c(2, 24)) +
+  geom_text_repel(aes(label=Player), size=3, color="black", max.overlaps = 15) +
+  theme_minimal()+
+  labs(title="Best NBA Players Ever", 
+       subtitle="Finals MVP didn't exist until 1969. Sorry Bill Russell.\nnickwarino.com, created 2022-06-21", 
+       caption="sources: Basketball-Reference.com, Wikipedia 
+       \nUniverse of players limited to 562 players listed in top 250 list for regular season or playoff WS, WS/48, BPM, or VORP leaderboards",
+       x="Value Per Minute in Regular Season and Playoffs 
+       (Mean of Regular Season and Playoff BPM & WS Z-Scores)",
+       y="Value (Total) in Regular Season and Playoffs 
+       (Mean of Regular Season and Playoff VORP & WS Z-Scores)",
+       size="Total GOAT Score",
+       color="NBA Finals MVPs") +
+  theme(legend.position=c(.15,.65)) + My_Theme
+
+ggsave("docs/2022-06-21_nba_goat2.png", width=15, height=15, units="in")
+

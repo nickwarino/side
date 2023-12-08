@@ -1,0 +1,94 @@
+---
+title: "Ohtani Stats"
+author: "Nick Warino"
+date: 2023-08-08
+format:
+  html:
+    embed-resources: true
+editor: source  
+toc: true
+number-sections: true
+execute: 
+  echo: false
+  warning: false
+fig-width: 14 # Set default figure width
+fig-height: 12 # Set default figure height
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup}
+#| include: false
+
+
+#Libraries I Always Load
+library(rmarkdown) # Dynamic Documents for R
+library(tidyverse) # Easily Install and Load the 'Tidyverse'
+library(ggthemes) # Extra Themes, Scales and Geoms for 'ggplot2'
+library(ggrepel) # Automatically Position Non-Overlapping Text Labels with 'ggplot2'
+library(ggtext) # Improved Text Rendering Support for 'ggplot2'
+library(lemon) # Freshing Up your 'ggplot2' Plots
+library(ragg) # Graphic Devices Based on AGG
+library(kableExtra) # Construct Complex Table with 'kable' and Pipe Syntax
+library(tidylog) # Logging for 'dplyr' and 'tidyr' Functions
+library(skimr) # Compact and Flexible Summaries of Data
+library(here) # A Simpler Way to Find Your Files
+source("/Users/nickmac/Dropbox/Creative Projects/Themes/My_Theme_NoY.R")
+source("/Users/nickmac/Dropbox/Creative Projects/Themes/My_Theme_WithY.R")
+
+options(scipen=999)
+
+folder_names <- c("raw_data", 
+                  "output_data", 
+                  "rmd", 
+                  "docs", 
+                  "scripts")
+sapply(folder_names, function(x) dir.create(here(x)))
+remove(folder_names)
+```
+
+```{r}
+# Install and load libraries
+library(baseballr)
+# Load the utils package
+library(utils)
+
+# URL of the CSV file
+url <- "https://raw.githubusercontent.com/Neil-Paine-1/MLB-WAR-data-historical/master/jeffbagwell_war_historical_2023.csv"
+
+# Download the file and read it into a data frame
+data <- read.csv(url, stringsAsFactors = FALSE)
+```
+
+```{r}
+data_filtered <- data |> 
+  select(player_name, sched, year_ID, bwar162, pwar162) |> 
+  filter(sched > 59) |> 
+  mutate(twar162 = bwar162 + pwar162)
+
+data_long <- data_filtered |> 
+  pivot_longer(cols = 2:6, names_to = "variable", values_to = "value")
+```
+
+```{r}
+
+data_long
+
+ggplot(data_filtered,
+       aes(x = bwar162,
+           y = pwar162)) +
+  geom_point(aes(size = 5, fill = twar162), alpha = 0.7, shape = 21, stroke = .5) +
+  geom_text_repel(aes(label = player_name), size = 5, color = "black", max.overlaps = 5) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red",
+                       midpoint = median(data_filtered$twar162, na.rm = TRUE)) +
+  theme_minimal() +
+  labs(title = "WAR By Season",
+       subtitle = "Effective FG% in last 2 minutes of regulation, score within 5 points.\nnickwarino.com, created 2023-05-09",
+       caption = "sources: Basketball-Reference.com \nUniverse of players limited to top 100 players of FGA in same situation",
+       x = "Batting WAR",
+       y = "Pitching WAR",
+       fill = "Total WAR") +
+  theme(legend.position = c(.9, .9)) +
+  My_Theme_WithY()
+```
+

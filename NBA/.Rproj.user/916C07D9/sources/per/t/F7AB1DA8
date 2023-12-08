@@ -1,0 +1,32 @@
+{
+    "id": "F7AB1DA8",
+    "path": "~/Dropbox/Creative Projects/NBA/NBA.qmd",
+    "project_path": "NBA.qmd",
+    "type": "quarto_markdown",
+    "hash": "2739492309",
+    "contents": "",
+    "dirty": false,
+    "created": 1677609641632.0,
+    "source_on_save": true,
+    "relative_order": 1,
+    "properties": {
+        "rmdVisualMode": "false",
+        "rmdVisualWrapConfigured": "true",
+        "source_window_id": "",
+        "Source": "Source",
+        "docOutlineVisible": "0",
+        "rmdVisualCollapsedChunks": "",
+        "cursorPosition": "347,0",
+        "scrollLine": "329",
+        "rmdVisualModeLocation": "1411:2182",
+        "chunk_output_type": "console"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1699990476,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1699990476,
+    "read_only": false,
+    "read_only_alternatives": []
+}

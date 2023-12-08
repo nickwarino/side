@@ -1,0 +1,28 @@
+{
+    "id": "E97BE736",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1655770523267.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "id": "40e2c0116374401a8a8180408cb7a931",
+        "name": "goats_list",
+        "title": "goats_list",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 105553124911104,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1655770523267,
+    "read_only": false,
+    "read_only_alternatives": []
+}

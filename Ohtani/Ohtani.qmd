@@ -1,0 +1,152 @@
+---
+title: "Ohtani Stats"
+author: "Nick Warino"
+date: 2023-08-08
+format:
+  html:
+    embed-resources: true
+editor: source  
+toc: true
+number-sections: true
+execute: 
+  echo: false
+  warning: false
+fig-width: 14 # Set default figure width
+fig-height: 12 # Set default figure height
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup}
+#| include: false
+
+
+#Libraries I Always Load
+library(rmarkdown) # Dynamic Documents for R
+library(tidyverse) # Easily Install and Load the 'Tidyverse'
+library(ggthemes) # Extra Themes, Scales and Geoms for 'ggplot2'
+library(ggrepel) # Automatically Position Non-Overlapping Text Labels with 'ggplot2'
+library(ggtext) # Improved Text Rendering Support for 'ggplot2'
+library(lemon) # Freshing Up your 'ggplot2' Plots
+library(ragg) # Graphic Devices Based on AGG
+library(kableExtra) # Construct Complex Table with 'kable' and Pipe Syntax
+library(tidylog) # Logging for 'dplyr' and 'tidyr' Functions
+library(skimr) # Compact and Flexible Summaries of Data
+library(here) # A Simpler Way to Find Your Files
+source("/Users/nickmac/Dropbox/Creative Projects/Themes/My_Theme_NoY.R")
+source("/Users/nickmac/Dropbox/Creative Projects/Themes/My_Theme_WithY.R")
+
+options(scipen=999)
+
+folder_names <- c("raw_data", 
+                  "output_data", 
+                  "rmd", 
+                  "docs", 
+                  "scripts")
+sapply(folder_names, function(x) dir.create(here(x)))
+remove(folder_names)
+```
+
+```{r}
+# Install and load libraries
+library(baseballr)
+# Load the utils package
+library(utils)
+
+# URL of the CSV file
+url <- "https://raw.githubusercontent.com/Neil-Paine-1/MLB-WAR-data-historical/master/jeffbagwell_war_historical_2023.csv"
+
+# Download the file and read it into a data frame
+data <- read.csv(url, stringsAsFactors = FALSE)
+```
+
+```{r}
+data_filtered <- data |> 
+  select(player_name, sched, year_ID, bwar162, br_pwar162) |> 
+  filter(sched > 100) |> 
+  mutate(twar162 = bwar162 + br_pwar162) |> 
+  mutate(label = ifelse(player_name == "Shohei Ohtani" | player_name == "Babe Ruth", 
+                        paste(player_name, year_ID), 
+                        NA)) |> 
+  mutate(bwar162 = round(bwar162, digits=1),
+         br_pwar162 = round(br_pwar162, digits=1),
+         twar162 = round(twar162, digits=1)) |>   
+  arrange(desc(twar162)) |> 
+  mutate(rank_twar = row_number()) |> 
+  relocate(rank_twar, .before = player_name)
+
+data_post_integration <- data_filtered |> 
+  filter(year_ID > 1944)
+
+seasons_with_2war <- data_filtered |> 
+  filter(bwar162 >=2,
+         br_pwar162 >=2)  |> 
+  select(-label)
+
+seasons_with_1war_post_integration <- data_post_integration |> 
+  filter(bwar162 >= 2,
+         br_pwar162 >= 2)  |> 
+  select(-label)
+
+```
+
+```{r}
+
+ggplot(data_filtered,
+       aes(x = bwar162,
+           y = br_pwar162)) +
+  geom_point(aes(size = twar162, fill = twar162), alpha = 0.7, shape = 21, stroke = .5) +
+  geom_text_repel(aes(label = label), 
+                  size = 5, color = "black", 
+                  na.rm = TRUE,
+                  max.overlaps = 5) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red",
+                       midpoint = median(data_filtered$twar162, na.rm = TRUE)) +
+  labs(title = "WAR By Season, pro-rated to 162 games",
+       subtitle = "Batting and Pitching WAR per 162 team games (based on JEFFBAGWELL, a combination Baseball-Reference's and Fangraphs's WAR calculations) ) by Season (only including seasons with >100 scheduled games.\nnickwarino.com, created 2023-08-08",
+       caption = "sources: Neil Pain's MLB historical WAR data",
+       x = "Batting WAR",
+       y = "Pitching WAR",
+       fill = "Total WAR") +
+  theme(legend.position = c(.9, .9)) +
+  My_Theme_WithY()
+
+data_table <- data_filtered |> 
+  head(100) |> 
+  select(-label)
+
+kable(data_table)
+
+kable(seasons_with_2war)
+
+
+
+ggplot(data_post_integration,
+       aes(x = bwar162,
+           y = br_pwar162)) +
+  geom_point(aes(size = twar162, fill = twar162), alpha = 0.7, shape = 21, stroke = .5) +
+  scale_size(range = c(1, 10)) +
+  geom_text_repel(aes(label = label), 
+                  size = 5, color = "black", 
+                  na.rm = TRUE,
+                  max.overlaps = 5) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red",
+                       midpoint = median(data_post_integration$twar162, na.rm = TRUE)) +
+  labs(title = "WAR By Season, pro-rated to 162 games",
+       subtitle = "Batting and Pitching WAR per 162 team games (based on JEFFBAGWELL, a combination Baseball-Reference's and Fangraphs's WAR calculations) ) by Season (only including seasons with >100 scheduled games.\nnickwarino.com, created 2023-08-08",
+       caption = "sources: Neil Pain's MLB historical WAR data",
+       x = "Batting WAR",
+       y = "Pitching WAR",
+       fill = "Total WAR") +
+  theme(legend.position = c(.9, .9)) +
+  My_Theme_WithY()
+
+data_table_2 <- data_post_integration |> 
+  head(100) |> 
+  select(-label)
+
+kable(data_table_2)
+
+kable(seasons_with_1war_post_integration)
+```
+

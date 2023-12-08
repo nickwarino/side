@@ -1,0 +1,130 @@
+---
+title: "What the Nordics can teach California about bargaining"
+author: "Nick Warino"
+date: 2023-09-14
+format:
+  html:
+    embed-resources: true
+editor: source  
+toc: true
+number-sections: true
+execute: 
+  echo: false
+  warning: false
+fig-width: 14 # Set default figure width
+fig-height: 12 # Set default figure height
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+#Libraries I Always Load
+library(rmarkdown) # Dynamic Documents for R
+library(tidyverse) # Easily Install and Load the 'Tidyverse'
+library(ggthemes) # Extra Themes, Scales and Geoms for 'ggplot2'
+library(ggrepel) # Automatically Position Non-Overlapping Text Labels with 'ggplot2'
+library(ggtext) # Improved Text Rendering Support for 'ggplot2'
+library(lemon) # Freshing Up your 'ggplot2' Plots
+library(ragg) # Graphic Devices Based on AGG
+library(kableExtra) # Construct Complex Table with 'kable' and Pipe Syntax
+library(tidylog) # Logging for 'dplyr' and 'tidyr' Functions
+library(skimr) # Compact and Flexible Summaries of Data
+library(here) # A Simpler Way to Find Your Files
+source("/Users/nickmac/Dropbox/Creative Projects/Themes/My_Theme_NoY.R")
+source("/Users/nickmac/Dropbox/Creative Projects/Themes/My_Theme_WithY.R")
+
+options(scipen=999)
+
+
+```
+
+
+```{r}
+# Load
+trade_union_density <- read_csv("2023-09-14-OECD-Trade_union_density.csv")
+collective_bargaining_coverage <- read_csv("2023-09-14-OECD-Collective_bargaining_coverage.csv")
+
+population <- read_csv("2023-09-14-OECD-Population.csv")
+
+population <- population %>%
+  rename_with(~ifelse(str_detect(.,"^[0-9]+$"), paste0("Pop_", .), .))
+
+select_tud <- trade_union_density |> 
+  select(Country, Stat, Avg_2011_2020) |> 
+  arrange(desc(Avg_2011_2020))
+
+select_cbc <- collective_bargaining_coverage |> 
+  select(Country, Stat, Avg_2012_2021) |> 
+  arrange(desc(Avg_2012_2021))
+
+select_pop <- population |> 
+  na.omit() |> 
+  select(Country, Stat, Pop_2021) |> 
+  arrange(desc(Pop_2021))
+```
+
+
+```{r}
+# Combine the data frames
+combined_data <- select_cbc %>%
+  inner_join(select_tud, by = "Country", suffix = c("_cbc", "_tud")) %>%
+  inner_join(select_pop, by = "Country")
+
+
+# Rename columns for easier plotting
+combined_data <- combined_data %>%
+  rename(
+    CBC = Avg_2012_2021,
+    TUD = Avg_2011_2020) |> 
+  select (Country, CBC, TUD, Pop_2021)
+```
+
+```{r}
+# Filter data to include only Nordic countries
+nordic_data <- combined_data %>% 
+  filter(Country %in% c("Iceland", "Denmark", "Sweden", "Finland", "Norway"))
+
+# Calculate weighted average for CBC and TUD
+cbc_weighted_avg <- sum(nordic_data$CBC * nordic_data$Pop_2021) / sum(nordic_data$Pop_2021)
+tud_weighted_avg <- sum(nordic_data$TUD * nordic_data$Pop_2021) / sum(nordic_data$Pop_2021)
+
+# Create a data frame for Nordic Weighted Average
+nordic_weighted_avg <- data.frame(
+  Country = "Nordic Weighted Average",
+  CBC = cbc_weighted_avg,
+  TUD = tud_weighted_avg,
+  Pop_2021 = sum(nordic_data$Pop_2021)
+)
+
+# Add the weighted average row to the combined_data
+combined_data <- bind_rows(combined_data, nordic_weighted_avg)
+
+```
+
+
+```{r}
+# Create scatterplot with specific country and OECD highlighting, labeling, and formatting
+ggplot(combined_data, aes(x = TUD, y = CBC)) +
+  geom_point(aes(color = case_when(
+    Country %in% c("Iceland", "Denmark", "Sweden", "Finland", "Norway", "Nordic Weighted Average") ~ "Blue",
+    Country == "United States" ~ "Red",
+    Country == "OECD" ~ "Purple",
+    TRUE ~ "Black"
+  )), size = 5) +
+  geom_text_repel(aes(label = ifelse(Country %in% c("Iceland", "Denmark", "Sweden", "Finland", "Norway", "Nordic Weighted Average", "United States", "OECD"), as.character(Country), "")), vjust = -1, size = 6) +
+  scale_color_manual(values = c("Blue" = "blue", "Red" = "red", "Purple" = "purple", "Black" = "black")) +
+  geom_abline(intercept = 0, slope = 1, color = "lightgray", size = 0.5) +  # Adding the line of perfect proportion
+  labs(
+    title = "Trade Union Density and Collective Bargaining Coverage",
+    x = "Trade Union Density (Average 2011-2020)",
+    y = "Collective Bargaining Coverage (Avgerage 2012-2021)",
+    subtitle = "The Nordic Model has unique labor laws, leading to high union density and collective bargaining coverage",
+       caption = "sources: OECD data. Created by Nick Warino for People's Policy Project. 2023-09-14",) +
+  scale_x_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
+  scale_y_continuous(breaks = c(0, 20, 40, 60, 80, 100), limits = c(0, 101)) +
+  My_Theme_WithY() +
+    theme(legend.position = "none")
+
+
+```
+
